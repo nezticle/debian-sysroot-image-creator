@@ -60,10 +60,10 @@ readonly RELEASE_FILE="Release"
 readonly RELEASE_FILE_GPG="Release.gpg"
 readonly RELEASE_LIST="${REPO_BASEDIR}/${RELEASE_FILE}"
 readonly RELEASE_LIST_GPG="${REPO_BASEDIR}/${RELEASE_FILE_GPG}"
-readonly PACKAGE_FILE_AMD64="main/binary-amd64/Packages.bz2"
-readonly PACKAGE_FILE_I386="main/binary-i386/Packages.bz2"
-readonly PACKAGE_FILE_ARM="main/binary-armhf/Packages.bz2"
-readonly PACKAGE_FILE_MIPS="main/binary-mipsel/Packages.bz2"
+readonly PACKAGE_FILE_AMD64="main/binary-amd64/Packages.xz"
+readonly PACKAGE_FILE_I386="main/binary-i386/Packages.xz"
+readonly PACKAGE_FILE_ARM="main/binary-armhf/Packages.xz"
+readonly PACKAGE_FILE_MIPS="main/binary-mipsel/Packages.xz"
 readonly PACKAGE_LIST_AMD64="${REPO_BASEDIR}/${PACKAGE_FILE_AMD64}"
 readonly PACKAGE_LIST_I386="${REPO_BASEDIR}/${PACKAGE_FILE_I386}"
 readonly PACKAGE_LIST_ARM="${REPO_BASEDIR}/${PACKAGE_FILE_ARM}"
@@ -181,8 +181,8 @@ CreateTarBall() {
   tar zcf ${TARBALL} -C ${INSTALL_ROOT} .
 }
 
-ExtractPackageBz2() {
-  bzcat "$1" | egrep '^(Package:|Filename:|SHA256:) ' > "$2"
+ExtractPackageXz() {
+  xzcat "$1" | egrep '^(Package:|Filename:|SHA256:) ' > "$2"
 }
 
 GeneratePackageListAmd64() {
@@ -191,7 +191,7 @@ GeneratePackageListAmd64() {
   local tmp_package_list="${BUILD_DIR}/Packages.${DIST}_amd64"
   DownloadOrCopy "${PACKAGE_LIST_AMD64}" "${package_list}"
   # VerifyPackageListing "${PACKAGE_FILE_AMD64}" "${package_list}"
-  ExtractPackageBz2 "$package_list" "$tmp_package_list"
+  ExtractPackageXz "$package_list" "$tmp_package_list"
   GeneratePackageList "$tmp_package_list" "$output_file" "${DEBIAN_PACKAGES}
     ${DEBIAN_PACKAGES_X86}"
 }
@@ -202,7 +202,7 @@ GeneratePackageListI386() {
   local tmp_package_list="${BUILD_DIR}/Packages.${DIST}_amd64"
   DownloadOrCopy "${PACKAGE_LIST_I386}" "${package_list}"
   # VerifyPackageListing "${PACKAGE_FILE_I386}" "${package_list}"
-  ExtractPackageBz2 "$package_list" "$tmp_package_list"
+  ExtractPackageXz "$package_list" "$tmp_package_list"
   GeneratePackageList "$tmp_package_list" "$output_file" "${DEBIAN_PACKAGES}
     ${DEBIAN_PACKAGES_X86}"
 }
@@ -213,7 +213,7 @@ GeneratePackageListARM() {
   local tmp_package_list="${BUILD_DIR}/Packages.${DIST}_arm"
   DownloadOrCopy "${PACKAGE_LIST_ARM}" "${package_list}"
   # VerifyPackageListing "${PACKAGE_FILE_ARM}" "${package_list}"
-  ExtractPackageBz2 "$package_list" "$tmp_package_list"
+  ExtractPackageXz "$package_list" "$tmp_package_list"
   GeneratePackageList "$tmp_package_list" "$output_file" "${DEBIAN_PACKAGES}"
 }
 
@@ -223,7 +223,7 @@ GeneratePackageListMips() {
   local tmp_package_list="${BUILD_DIR}/Packages.${DIST}_mips"
   DownloadOrCopy "${PACKAGE_LIST_MIPS}" "${package_list}"
   # VerifyPackageListing "${PACKAGE_FILE_MIPS}" "${package_list}"
-  ExtractPackageBz2 "$package_list" "$tmp_package_list"
+  ExtractPackageXz "$package_list" "$tmp_package_list"
   GeneratePackageList "$tmp_package_list" "$output_file" "${DEBIAN_PACKAGES}"
 }
 
@@ -464,9 +464,14 @@ BuildSysrootARM() {
   ClearInstallDir
   local package_file="$BUILD_DIR/package_with_sha256sum_arm"
   GeneratePackageListARM "$package_file"
+  echo "GeneratePackageListARM Finished"
   local files_and_sha256sums="$(cat ${package_file})"
+  cat ${package_file}
   StripChecksumsFromPackageList "$package_file"
+  cat ${package_file}
+  echo "StripChecksumsFromPackageList Finished"
   VerifyPackageFilesMatch "$package_file" "$DEBIAN_DEP_LIST_ARM"
+  echo "VerifyPackageFilesMatch Finished"
   APT_REPO=${APR_REPO_ARM:=$APT_REPO}
   InstallIntoSysroot ${files_and_sha256sums}
   CleanupJailSymlinks
